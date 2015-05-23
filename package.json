@@ -1,0 +1,23 @@
+{
+  "name": "ftse-crash",
+  "version": "1.0.0",
+  "description": "Plots equities with their long term trend values",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samjewell/ftse-crash.git"
+  },
+  "author": "Sam Jewell",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/samjewell/ftse-crash/issues"
+  },
+  "homepage": "https://github.com/samjewell/ftse-crash#readme",
+  "dependencies": {
+    "lodash": "^3.9.1",
+    "moment": "^2.10.3"
+  }
+}
