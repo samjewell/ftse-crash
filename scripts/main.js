@@ -50,14 +50,12 @@ function deflatorToday(day) {
     return yearData[0] === highDate.format('YYYY-MM-DD')
   });
   // var low2 = deflator.data
-  return map_fraction(fractionPassed, lowYearData[1], highYearData[1]);
+  return Math.round(map_fraction(fractionPassed, lowYearData[1], highYearData[1]) * 100) / 100;
 }
 
 
-
-
 // Discard data other than the Open column from the FTSE
-ftse.column_names = [ftse.column_names[0], ftse.column_names[1], 'Daily deflator', 'FTSE real terms'];
+ftse.column_names = [ftse.column_names[0], ftse.column_names[1], 'Daily deflator', 'FTSE real terms', 'Date in year float'];
 console.log(ftse.column_names);
 
 ftse.data = ftse.data.map(function(dayData) {
@@ -71,10 +69,34 @@ console.log(lastDeflator);
 
 ftse.data = ftse.data.map(function(dayData) {
 
-  dayData.push((dayData[1] / dayData[2]) * lastDeflator);
+  var ftseRealTerms = (dayData[1] / dayData[2]) * lastDeflator;
+  dayData.push(Math.round(ftseRealTerms * 100) / 100 );
   // (ftse / deflator) x lastDeflator
   return dayData;
 })
 console.log(ftse.data);
+
+// Convert the date object into a float for number of years passed
+ftse.data = ftse.data.map(function(dayData) {
+
+  yearFloat = (moment(dayData[0]).format('X') / 31556926) + 1970;
+  yearFloat = Math.round(yearFloat * 100) / 100;
+
+  dayData.push(yearFloat);
+  // (ftse / deflator) x lastDeflator
+  return dayData;
+})
+console.log(ftse.data);
+
+// Keep only data for every 4 weeks.
+var shortData = []
+ftse.data.forEach(function(dayData, index) {
+  if (index % 13 === 0) {
+    shortData.push(dayData)
+  }
+})
+var shortFtse = ftse;
+shortFtse.data = shortData;
+console.log(shortFtse);
 
 
