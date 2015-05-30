@@ -21,4 +21,4 @@ use Browser-sync to view changes in realtime as you make them
 
 Run this from inside the top level folder in the repo:
 
-`browser-sync start --server --files "index.html, scripts/main.js"`
+`npm start`
