@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/samjewell/ftse-crash#readme",
   "dependencies": {
-    "lodash": "^3.9.1",
     "moment": "^2.10.3"
   }
 }
