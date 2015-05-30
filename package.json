@@ -2,10 +2,11 @@
   "name": "ftse-crash",
   "version": "1.0.0",
   "description": "Plots equities with their long term trend values",
-  "main": "index.js",
   "scripts": {
+    "start": "./scripts/start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/samjewell/ftse-crash.git"

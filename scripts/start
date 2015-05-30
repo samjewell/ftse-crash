@@ -1,0 +1,5 @@
+#!/bin/bash
+# Usage: scripts/start
+# Starts the projects's development server.
+
+browser-sync start --server --files "index.html, scripts/main.js"
