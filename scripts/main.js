@@ -57,3 +57,40 @@ shortFtse.data.forEach(function(dayData, index) {
 shortFtse.column_names[2] = 'deflator';
 shortFtse.column_names[3] = 'open, real terms';
 console.log(shortFtse);
+
+// MG.data_graphic expects the data object to be an array of objects
+// [
+//   {
+//     "year": "1945",
+//     "sightings": 6
+//   },
+//   {
+//     "year": "1946",
+//     "sightings": 8
+//   }
+// ]
+
+// convert our data into that format:
+ftseData = shortFtse.data.map(function(dayData) {
+  return {
+    'year': dayData[0],
+    'open': dayData[1],
+    'deflator': dayData[2],
+    'open, real terms': dayData[3],
+  }
+})
+console.log(ftseData);
+
+d3.json('scripts/ufo-sightings.json', function(data) {
+    MG.data_graphic({
+        title: "UFO Sightings",
+        description: "Yearly UFO sightings from the year 1945 to 2010.",
+        data: data,
+        width: 650,
+        height: 150,
+        target: '#ufo-sightings',
+        x_accessor: 'year',
+        y_accessor: 'sightings',
+        markers: [{'year': 1964, 'label': '"The Creeping Terror" released'}]
+    })
+})
