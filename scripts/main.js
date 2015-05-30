@@ -81,16 +81,13 @@ ftseData = shortFtse.data.map(function(dayData) {
 })
 console.log(ftseData);
 
-d3.json('scripts/ufo-sightings.json', function(data) {
-    MG.data_graphic({
-        title: "UFO Sightings",
-        description: "Yearly UFO sightings from the year 1945 to 2010.",
-        data: data,
-        width: 650,
-        height: 150,
-        target: '#ufo-sightings',
-        x_accessor: 'year',
-        y_accessor: 'sightings',
-        markers: [{'year': 1964, 'label': '"The Creeping Terror" released'}]
-    })
+MG.data_graphic({
+  title: "FTSE",
+  description: "FTSE adjusted for inflation.",
+  data: ftseData,
+  width: 800,
+  height: 450,
+  target: '#ftse',
+  x_accessor: 'year',
+  y_accessor: ['open, real terms', 'open']
 })
