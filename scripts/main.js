@@ -11,6 +11,11 @@ function dateInYears(date) {
   return Math.round(yearFloat * 1000) / 1000;
 }
 
+function yearsToDate(years) {
+  var yearInSeconds = (years - 1970) * 31556926;
+  return moment(yearInSeconds, 'X').format('YYYY-MM-DD');
+}
+
 function keepTwoColumns(dayData) {
   return [dateInYears(dayData[0]), dayData[1]];
 }
@@ -58,6 +63,35 @@ shortFtse.column_names[2] = 'deflator';
 shortFtse.column_names[3] = 'open, real terms';
 console.log(shortFtse);
 
+// return (a, b) that minimize
+// sum_i (a*x_i+b - y_i)^2
+// such that Y = a*X + b approximate the data
+function linear_regression( data )
+{
+    var i, 
+        x, y,
+        sumx=0, sumy=0, sumx2=0, sumy2=0, sumxy=0,
+        len=data.length,
+        a, b;
+
+    for(i=0;i<data.length;i++)
+    {   
+        // this is our data pair
+        x = data[i][0]; y = data[i][3]; 
+        sumx += x;
+        sumx2 += (x*x);
+        sumy += y;
+        sumy2 += (y*y);
+        sumxy += (x*y);
+    }
+
+    b = (sumy*sumx2 - sumx*sumxy)/(len*sumx2-sumx*sumx);
+    a = (len*sumxy - sumx*sumy)/(len*sumx2-sumx*sumx);
+    return [a, b];
+}
+
+
+
 // MG.data_graphic expects the data object to be an array of objects
 // [
 //   {
@@ -73,13 +107,23 @@ console.log(shortFtse);
 // convert our data into that format:
 ftseData = shortFtse.data.map(function(dayData) {
   return {
-    'year': dayData[0],
+    'year': yearsToDate(dayData[0]),
     'open': dayData[1],
     'deflator': dayData[2],
     'open, real terms': dayData[3],
   }
 })
+
+ftseData = MG.convert.date(ftseData, 'year');
 console.log(ftseData);
+
+var lineOfBestFit = linear_regression( shortFtse.data );
+console.log(lineOfBestFit);
+var a = lineOfBestFit[0];
+var b = lineOfBestFit[1];
+ftseData[0].bestFit = a * dateInYears(ftseData[0].year) + b;
+var n = ftseData.length;
+ftseData[n-1].bestFit = a * dateInYears(ftseData[n-1].year) + b;
 
 MG.data_graphic({
   title: "FTSE",
@@ -89,5 +133,23 @@ MG.data_graphic({
   height: 450,
   target: '#ftse',
   x_accessor: 'year',
-  y_accessor: ['open, real terms', 'open']
+  show_secondary_x_label: false,
+  xax_format: d3.time.format('%Y'),
+  y_accessor: ['open, real terms', 'open', 'bestFit'],
+  yax_format: d3.format('4'),
+  y_extended_ticks: true,
+  decimals: 0,
+  right: 110,
+  legend: ['ftse (in real terms)', 'ftse (raw)', 'best fit (linear)'],
+  target: '.legend',
+  aggregate_rollover: true,
+  // mouseover: function(d, i) {
+  //     //custom format the rollover text, show days
+  //     var prefix = d3.formatPrefix(d.value);
+  //     sam = d3.select('.mg-active-datapoint-container .mg-active-datapoint')[0]
+  //         // .html('Day ' + (i+1) + ' &nbsp; '
+  //         //     + prefix.scale(d.value).toFixed(2) + prefix.symbol);
+  //     console.log(sam);
+  //     console.log(d3.select('.mg-active-datapoint-container .mg-active-datapoint')[0]);
+  // }
 })
