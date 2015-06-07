@@ -58,36 +58,39 @@ shortFtse.data.forEach(function(dayData, index) {
   var normalisedDeflator = currentDeflator / firstDeflator;
   // Take inflation off the FTSE to convert to real terms
   dayData[3] = dayData[1] / normalisedDeflator;
+  // Add log(year) for later fitting of exp curve
+  dayData[4] = Math.log(dayData[3]);
 })
 shortFtse.column_names[2] = 'deflator';
-shortFtse.column_names[3] = 'open, real terms';
+shortFtse.column_names[3] = 'open, real-terms';
+shortFtse.column_names[4] = 'log(open, real-terms)';
 console.log(shortFtse);
 
-// return (a, b) that minimize
-// sum_i (a*x_i+b - y_i)^2
-// such that Y = a*X + b approximate the data
-function linear_regression( data )
+// return (m, c) that minimize
+// sum_i (mx_i+c - y_i)^2
+// such that Y = mX + c approximate the data
+function linear_regression( xArr, yArr )
 {
-    var i, 
-        x, y,
-        sumx=0, sumy=0, sumx2=0, sumy2=0, sumxy=0,
-        len=data.length,
-        a, b;
+  var i, 
+    x, y,
+    sumx=0, sumy=0, sumx2=0, sumy2=0, sumxy=0,
+    len = xArr.length,
+    m, c;
 
-    for(i=0;i<data.length;i++)
-    {   
-        // this is our data pair
-        x = data[i][0]; y = data[i][3]; 
-        sumx += x;
-        sumx2 += (x*x);
-        sumy += y;
-        sumy2 += (y*y);
-        sumxy += (x*y);
-    }
+  for(i = 0; i < len; i++)
+  {   
+    // this is our data pair
+    x = xArr[i]; y = yArr[i]; 
+    sumx += x;
+    sumx2 += (x*x);
+    sumy += y;
+    sumy2 += (y*y);
+    sumxy += (x*y);
+  }
 
-    b = (sumy*sumx2 - sumx*sumxy)/(len*sumx2-sumx*sumx);
-    a = (len*sumxy - sumx*sumy)/(len*sumx2-sumx*sumx);
-    return [a, b];
+  c = (sumy*sumx2 - sumx*sumxy)/(len*sumx2-sumx*sumx);
+  m = (len*sumxy - sumx*sumy)/(len*sumx2-sumx*sumx);
+  return [m, c];
 }
 
 
@@ -111,19 +114,67 @@ ftseData = shortFtse.data.map(function(dayData) {
     'open': dayData[1],
     'deflator': dayData[2],
     'open, real terms': dayData[3],
+    'log(year)': dayData[4],
   }
 })
 
 ftseData = MG.convert.date(ftseData, 'year');
 console.log(ftseData);
 
-var lineOfBestFit = linear_regression( shortFtse.data );
-console.log(lineOfBestFit);
-var a = lineOfBestFit[0];
-var b = lineOfBestFit[1];
-ftseData[0].bestFit = a * dateInYears(ftseData[0].year) + b;
-var n = ftseData.length;
-ftseData[n-1].bestFit = a * dateInYears(ftseData[n-1].year) + b;
+function transpose(arr) {
+  var newArr = arr[0].map(function(col, i) {
+    return arr.map(function(row) {
+      return row[i];
+    })
+  })
+  return newArr;
+}
+
+
+var linearFtse = linear_regression( transpose(shortFtse.data)[0], transpose(shortFtse.data)[3] );
+
+
+
+function linearPoint ( m, c, x ) {
+  var y = m * dateInYears(x) + c;
+  return y;
+}
+
+
+ftseData[0].bestFit = linearPoint(linearFtse[0], linearFtse[1], ftseData[0].year);
+var end = ftseData.length - 1;
+ftseData[end].bestFit = linearPoint(linearFtse[0], linearFtse[1], ftseData[end].year);
+
+// http://www.had2know.com/academics/regression-calculator-statistics-best-fit.html
+// the equation y = ac^x can be linearized by taking the natural logarithm of both sides.
+// Doing this yields Ln(y) = Ln(a) + xLn(c). This is now linear in the varialbes Ln(y) and x.
+// You can solve for Ln(c) and Ln(a) by using the formulas for straight line regression,
+// just replace the y data with Ln(y).
+
+// y = ac^x
+// log(y) = log(a) + xlog(c)
+// Y = A + xC
+
+var logFtseRealTerms = linear_regression( transpose(shortFtse.data)[0], transpose(shortFtse.data)[4] );
+var log_c = logFtseRealTerms[0];
+var log_a = logFtseRealTerms[1];
+console.log(log_a, log_c);
+var e = Math.E;
+var c = Math.pow(e, log_c);
+var a = Math.pow(e, log_a);
+console.log(a,c);
+
+function expPoint ( a, c, x ) {
+  var y = a * Math.pow(c, dateInYears(x));
+  return y;
+}
+
+ftseData.forEach(function(dayData, i) {
+  dayData.expFit = expPoint(a, c, ftseData[i].year);
+})
+
+
+
 
 MG.data_graphic({
   title: "FTSE",
@@ -135,12 +186,12 @@ MG.data_graphic({
   x_accessor: 'year',
   show_secondary_x_label: false,
   xax_format: d3.time.format('%Y'),
-  y_accessor: ['open, real terms', 'open', 'bestFit'],
+  y_accessor: ['open, real terms', 'open', 'bestFit', 'expFit'],
   yax_format: d3.format('4'),
   y_extended_ticks: true,
   decimals: 0,
-  right: 110,
-  legend: ['ftse (in real terms)', 'ftse (raw)', 'best fit (linear)'],
+  right: 120,
+  legend: ['ftse (in real terms)', 'ftse (raw)', 'best fit (linear)', 'best fit (exponential)'],
   target: '.legend',
   aggregate_rollover: true,
   // mouseover: function(d, i) {
